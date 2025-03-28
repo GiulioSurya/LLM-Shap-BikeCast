@@ -225,7 +225,7 @@ class Model(ABC):
             raise ValueError(
                 f"Errore {self.__class__.__name__}: la colonna target '{self.target_col}' non è presente nel DataFrame.")
         if not isinstance(df, pd.DataFrame):
-            raise TypeError(f"Errore {self.__class__.__name__}: 'dtf_data' deve essere un DataFrame Pandas.")
+            raise TypeError(f"Errore {self.__class__.__name__}: {dtf_data} deve essere un DataFrame Pandas.")
 
         x_train, x_test, y_train, y_test = self._split_train_test(df)
 
@@ -339,7 +339,7 @@ class XgBoost(Model):
     """
 
     def __init__(self, model_parameters=None, test_size=0.2, target_col="cnt",
-                 file_path=r"C:\Users\loverdegiulio\Desktop", random_state=42, early_stopping_rounds=10):
+                 file_path=r"C:\Users\loverdegiulio\Desktop", random_state=42, early_stopping_rounds=10, **kwargs):
         super().__init__(test_size=test_size, target_col=target_col, file_path=file_path, random_state=random_state,
                          early_stopping_rounds=early_stopping_rounds)
         """
@@ -352,6 +352,7 @@ class XgBoost(Model):
         """  ##
 
         self.model_params = model_parameters or dict()
+        self.additional_params = kwargs
 
     def _get_model(self, **kwargs):
         """
@@ -388,6 +389,5 @@ class XgBoost(Model):
                 "Attenzione: nessun parametro specificato per il modello. Il modello verrà inizializzato con i parametri di default. "
                 "Si consiglia di eseguire un fine tuning per ottimizzare le performance.")
 
-        self.model = self._get_model(**self.model_params)
+        self.model = self._get_model(**self.model_params, **self.additional_params)
         return super().train(dtf_data)
-
