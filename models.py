@@ -92,7 +92,7 @@ class Model(ABC):
         print(f"File salvato in: {full_file_path}")
 
     @abstractmethod
-    def get_model(self, **kwargs):
+    def _get_model(self, **kwargs):
         """
         Metodo astratto da implementare nelle sottoclassi per restituire l'oggetto modello.
 
@@ -103,11 +103,25 @@ class Model(ABC):
         """
         raise NotImplementedError("Il metodo get_model deve essere implementato nelle sottoclassi.")
 
+    def _split_train_test(self, dtf_data):
+        df = dtf_data.copy()
+
+        y = df[self.target_col]
+        x = df.drop(columns=[self.target_col])
+
+        # Train_test_split
+        x_train, x_test, y_train, y_test = train_test_split(
+            x, y, test_size=self.test_size, random_state=self.random_state
+        )
+        return x_train, x_test, y_train, y_test
+
     def grid_search(self,
                     dtf_data,
                     grid_params,
                     file_name,
-                    early_stopping_rounds,
+                    target_col,
+                    early_stopping_rounds=10,
+                    validation_size=0.2,
                     cv=3,
                     scoring=None,
                     metrics=None):
@@ -139,6 +153,8 @@ class Model(ABC):
         df = dtf_data.copy()
 
         self.early_stopping_rounds = early_stopping_rounds
+        self.test_size = validation_size
+        self.target_col = target_col
 
         # Controlli basilari sugli argomenti
         if not isinstance(df, pd.DataFrame):
@@ -152,28 +168,18 @@ class Model(ABC):
             raise ValueError(
                 f"Errore {self.__class__.__name__}.grid_search: scegliere una loss function per il parametro 'scoring'.")
 
-        # Separazione delle features dalla target
-        y = df[self.target_col]
-        x = df.drop(columns=[self.target_col])
-
-        # Train_test_split
-        x_train, x_test, y_train, y_test = train_test_split(
-            x, y, test_size=self.test_size, random_state=self.random_state
-        )
+        x_train, x_val, y_train, y_val = self._split_train_test(df)
 
         # Costruisce e lancia la grid search
         grid_search = GridSearchCV(
-            estimator=self.get_model(),
+            estimator=self._get_model(),
             param_grid=grid_params,
             scoring=scoring,
             cv=cv,
             verbose=1,
             n_jobs=-1,
             return_train_score=True)
-        grid_search.fit(x_train, y_train, eval_set=[(x_test, y_test)], verbose=True)
-
-        # Stampa per verifica
-        print(grid_search.best_estimator_.get_params()['early_stopping_rounds'])
+        grid_search.fit(x_train, y_train, eval_set=[(x_val, y_val)], verbose=True)
 
         # Risultati in DataFrame
         df_result = pd.DataFrame(grid_search.cv_results_)
@@ -182,6 +188,13 @@ class Model(ABC):
             metrics = df_result.columns.tolist()
             warnings.warn(
                 f"Attenzione {self.__class__.__name__}.grid_search: nessuna metrica di valutazione selezionata, verranno restituite tutte le metirche disponibili")
+        else:
+            invalid_columns = [col for col in metrics if col not in df_result.columns.tolist()]
+            if invalid_columns:
+                warnings.warn(
+                    f"Attenzione: le seguenti colonne non sono valide: {invalid_columns}. "
+                    f"Colonne valide: {df_result.columns.tolist()}"
+                )
 
         # Salvataggio su Excel
         self.save_metrics_excel(df_result, metrics, self.file_path, file_name)
@@ -207,19 +220,15 @@ class Model(ABC):
         TypeError
             Se dtf_data non è un DataFrame Pandas.
         """
+        df = dtf_data.copy()
         if self.target_col not in dtf_data.columns:
             raise ValueError(
                 f"Errore {self.__class__.__name__}: la colonna target '{self.target_col}' non è presente nel DataFrame.")
-        if not isinstance(dtf_data, pd.DataFrame):
+        if not isinstance(df, pd.DataFrame):
             raise TypeError(f"Errore {self.__class__.__name__}: 'dtf_data' deve essere un DataFrame Pandas.")
 
-        df = dtf_data.copy()
-        y = df[self.target_col]
-        x = df.drop(self.target_col, axis=1)
+        x_train, x_test, y_train, y_test = self._split_train_test(df)
 
-        x_train, x_test, y_train, y_test = train_test_split(
-            x, y, test_size=self.test_size, random_state=self.random_state
-        )
         self.model.fit(x_train, y_train, eval_set=[(x_test, y_test)], verbose=True)
 
         return self.model
@@ -286,7 +295,7 @@ class Model(ABC):
             raise FileNotFoundError(f"Errore {self.__class__.__name__}: la cartella '{dir_name}' non esiste.")
 
         with open(filepath, "wb") as f:
-            pickle.dump(self, f)
+            pickle.dump(self, f)  # type: ignore
         print(f"Modello salvato in: {filepath}")
 
     @staticmethod
@@ -339,15 +348,12 @@ class XgBoost(Model):
         Parametri                                                                                                   
         ---------                                                                                                   
         model_parameters : dict, opzionale                                                                          
-            Dizionario dei parametri da passare a XGBRegressor. Se None, verranno utilizzati i default.             
+            Dizionario dei parametri da passare a XGBRegressor. Se None, verranno utilizzati i default di XGBRegressor.             
         """  ##
-        if model_parameters is None:
-            warnings.warn(
-                "Attenzione: nessun parametro specificato per il modello. Il modello verrà inizializzato con i parametri di default. "
-                "Si consiglia di eseguire un fine tuning per ottimizzare le performance.")
+
         self.model_params = model_parameters or dict()
 
-    def get_model(self, **kwargs):
+    def _get_model(self, **kwargs):
         """
         Restituisce un regressore XGBRegressor configurato con i parametri specificati.
 
@@ -365,18 +371,23 @@ class XgBoost(Model):
 
     def train(self, dtf_data):
         """
-        Esegue il training del modello XgBoost, sovrascrivendo se necessario le impostazioni ereditate.             
+        Esegue il training del modello XgBoost, sovrascrivendo se necessario le impostazioni ereditate.
 
-        Parametri                                                                                                   
-        ---------                                                                                                   
-        dtf_data : pd.DataFrame                                                                                    
-            DataFrame contenente i dati di training (features + target).                                           
+        Parametri
+        ---------
+        dtf_data : pd.DataFrame
+            DataFrame contenente i dati di training (features + target).
 
-        Returns                                                                                                     
-        -------                                                                                                     
-        self.model                                                                                                  
-            Il modello addestrato.                                                                                  
-        """  ##
-        self.model = self.get_model(**self.model_params)
+        Returns
+        -------
+        self.model
+            Il modello addestrato.
+        """
+        if not self.model_params:
+            warnings.warn(
+                "Attenzione: nessun parametro specificato per il modello. Il modello verrà inizializzato con i parametri di default. "
+                "Si consiglia di eseguire un fine tuning per ottimizzare le performance.")
+
+        self.model = self._get_model(**self.model_params)
         return super().train(dtf_data)
 
