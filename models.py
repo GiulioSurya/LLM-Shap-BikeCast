@@ -24,8 +24,12 @@ class Model(ABC):
 
     model = None
 
-    def __init__(self, test_size=0.2, target_col="cnt", file_path=r"C:\Users\loverdegiulio\Desktop", random_state=42,
-                 early_stopping_rounds=10):
+    def __init__(self, test_size=0.2,
+                 target_col="cnt",
+                 file_path=r"C:\Users\loverdegiulio\Desktop",
+                 random_state=42,
+                 early_stopping_rounds=10
+                 ):
         """
         Inizializza la classe Model.                                                                                
 
@@ -64,7 +68,11 @@ class Model(ABC):
                 f"Errore {self.__class__.__name__}: 'early_stopping_rounds' deve essere un intero positivo.")
 
     @staticmethod
-    def save_metrics_excel(dtf_data, metrics, file_path, file_name):
+    def save_metrics_excel(dtf_data,
+                           metrics,
+                           file_path,
+                           file_name
+                           ):
         """
         Salva un DataFrame in un file Excel, filtrando solo le colonne elencate in 'metrics'.
 
@@ -92,7 +100,9 @@ class Model(ABC):
         print(f"File salvato in: {full_file_path}")
 
     @abstractmethod
-    def _get_model(self, **kwargs):
+    def _get_model(self,
+                   **kwargs
+                   ):
         """
         Metodo astratto da implementare nelle sottoclassi per restituire l'oggetto modello.
 
@@ -103,7 +113,10 @@ class Model(ABC):
         """
         raise NotImplementedError("Il metodo get_model deve essere implementato nelle sottoclassi.")
 
-    def _split_train_test(self, dtf_data):
+    def _split_train_test(self,
+                          dtf_data
+                          ):
+
         df = dtf_data.copy()
 
         y = df[self.target_col]
@@ -124,7 +137,8 @@ class Model(ABC):
                     validation_size=0.2,
                     cv=3,
                     scoring=None,
-                    metrics=None):
+                    metrics=None
+                    ):
         """
         Esegue la ricerca a griglia (GridSearchCV) per selezionare gli iperparametri ottimali.
 
@@ -165,12 +179,11 @@ class Model(ABC):
         if not isinstance(file_name, str):
             raise TypeError(f"Errore {self.__class__.__name__}.grid_search: 'file_name' deve essere una stringa.")
         if scoring is None:
-            raise ValueError(
-                f"Errore {self.__class__.__name__}.grid_search: scegliere una loss function per il parametro 'scoring'.")
+            raise ValueError(f"Errore {self.__class__.__name__}.grid_search: scegliere una loss function per il "
+                             f"parametro 'scoring'.")
 
         x_train, x_val, y_train, y_val = self._split_train_test(df)
 
-        # Costruisce e lancia la grid search
         grid_search = GridSearchCV(
             estimator=self._get_model(),
             param_grid=grid_params,
@@ -179,15 +192,16 @@ class Model(ABC):
             verbose=1,
             n_jobs=-1,
             return_train_score=True)
+
         grid_search.fit(x_train, y_train, eval_set=[(x_val, y_val)], verbose=True)
 
-        # Risultati in DataFrame
         df_result = pd.DataFrame(grid_search.cv_results_)
 
         if metrics is None:
             metrics = df_result.columns.tolist()
             warnings.warn(
-                f"Attenzione {self.__class__.__name__}.grid_search: nessuna metrica di valutazione selezionata, verranno restituite tutte le metirche disponibili")
+                f"Attenzione {self.__class__.__name__}.grid_search: nessuna metrica di valutazione selezionata,"
+                f" verranno restituite tutte le metirche disponibili")
         else:
             invalid_columns = [col for col in metrics if col not in df_result.columns.tolist()]
             if invalid_columns:
@@ -196,10 +210,11 @@ class Model(ABC):
                     f"Colonne valide: {df_result.columns.tolist()}"
                 )
 
-        # Salvataggio su Excel
         self.save_metrics_excel(df_result, metrics, self.file_path, file_name)
 
-    def train(self, dtf_data):
+    def train(self,
+              dtf_data
+              ):
         """
         Esegue il training del modello utilizzando l'attributo 'model'.
 
@@ -222,8 +237,8 @@ class Model(ABC):
         """
         df = dtf_data.copy()
         if self.target_col not in dtf_data.columns:
-            raise ValueError(
-                f"Errore {self.__class__.__name__}: la colonna target '{self.target_col}' non è presente nel DataFrame.")
+            raise ValueError(f"Errore {self.__class__.__name__}: la colonna target '{self.target_col}'"
+                             f" non è presente nel DataFrame.")
         if not isinstance(df, pd.DataFrame):
             raise TypeError(f"Errore {self.__class__.__name__}: {dtf_data} deve essere un DataFrame Pandas.")
 
@@ -233,7 +248,9 @@ class Model(ABC):
 
         return self.model
 
-    def predict(self, dtf_pred):
+    def predict(self,
+                dtf_pred
+                ):
         """
         Effettua la predizione sui dati di input, utilizzando il modello addestrato.
 
@@ -267,7 +284,9 @@ class Model(ABC):
 
         return self.model.predict(dtf_pred)
 
-    def save(self, filepath=None):
+    def save(self,
+             filepath=None
+             ):
         """
         Serializza e salva l’intero oggetto Model (self) su disco tramite pickle.
 
@@ -338,9 +357,19 @@ class XgBoost(Model):
     Ne eredita i metodi fondamentali e implementa la logica di addestramento e predizione con XgBoost.
     """
 
-    def __init__(self, model_parameters=None, test_size=0.2, target_col="cnt",
-                 file_path=r"C:\Users\loverdegiulio\Desktop", random_state=42, early_stopping_rounds=10, **kwargs):
-        super().__init__(test_size=test_size, target_col=target_col, file_path=file_path, random_state=random_state,
+    def __init__(self,
+                 model_parameters=None,
+                 test_size=0.2,
+                 target_col="cnt",
+                 file_path=r"C:\Users\loverdegiulio\Desktop",
+                 random_state=42,
+                 early_stopping_rounds=10,
+                 **kwargs
+                 ):
+        super().__init__(test_size=test_size,
+                         target_col=target_col,
+                         file_path=file_path,
+                         random_state=random_state,
                          early_stopping_rounds=early_stopping_rounds)
         """
         Inizializza la classe XgBoost.                                                                              
@@ -370,7 +399,9 @@ class XgBoost(Model):
             early_stopping_rounds=self.early_stopping_rounds,
             **kwargs)
 
-    def train(self, dtf_data):
+    def train(self,
+              dtf_data
+              ):
         """
         Esegue il training del modello XgBoost, sovrascrivendo se necessario le impostazioni ereditate.
 
@@ -385,9 +416,9 @@ class XgBoost(Model):
             Il modello addestrato.
         """
         if not self.model_params:
-            warnings.warn(
-                "Attenzione: nessun parametro specificato per il modello. Il modello verrà inizializzato con i parametri di default. "
-                "Si consiglia di eseguire un fine tuning per ottimizzare le performance.")
+            warnings.warn("Attenzione: nessun parametro specificato per il modello. Il modello verrà inizializzato con "
+                          "i parametri di default Si consiglia di eseguire un fine tuning per ottimizzare le "
+                          "performance.")
 
         self.model = self._get_model(**self.model_params, **self.additional_params)
         return super().train(dtf_data)
