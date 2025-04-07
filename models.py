@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, GridSearchCV
 import xgboost as xgb
 import pickle
-from preprocessing import Preprocessing
+from modello.preprocessing import Preprocessing
 from pathlib import Path
 
 
@@ -59,13 +59,13 @@ class Model(ABC):
         if not isinstance(target_col, str):
             raise TypeError(f"Errore {self.__class__.__name__}: 'target_col' deve essere una stringa.")
         if not isinstance(file_path, (str, Path)):
-            raise TypeError(
-                f"Errore {self.__class__.__name__}: 'file_path' deve essere un percorso in formato stringa.")
+            raise TypeError(f"Errore {self.__class__.__name__}: 'file_path' deve essere un percorso in formato "
+                            f"stringa.")
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Errore {self.__class__.__name__}: la cartella '{file_path}' non esiste.")
         if not isinstance(early_stopping_rounds, int) or early_stopping_rounds <= 0:
-            raise TypeError(
-                f"Errore {self.__class__.__name__}: 'early_stopping_rounds' deve essere un intero positivo.")
+            raise TypeError(f"Errore {self.__class__.__name__}: 'early_stopping_rounds' deve essere un intero "
+                            f"positivo.")
 
     @staticmethod
     def save_metrics_excel(dtf_data,
@@ -135,9 +135,9 @@ class Model(ABC):
                     target_col,
                     early_stopping_rounds=10,
                     validation_size=0.2,
-                    cv=3,
                     scoring=None,
-                    metrics=None
+                    metrics=None,
+                    **kwargs
                     ):
         """
         Esegue la ricerca a griglia (GridSearchCV) per selezionare gli iperparametri ottimali.
@@ -172,8 +172,8 @@ class Model(ABC):
 
         # Controlli basilari sugli argomenti
         if not isinstance(df, pd.DataFrame):
-            raise TypeError(
-                f"Errore {self.__class__.__name__}.grid_search: 'dtf_data' deve essere un DataFrame Pandas.")
+            raise TypeError(f"Errore {self.__class__.__name__}.grid_search: 'dtf_data' deve essere un DataFrame Pandas."
+                            f"")
         if not isinstance(grid_params, dict):
             raise TypeError(f"Errore {self.__class__.__name__}.grid_search: 'grid_params' deve essere un dizionario.")
         if not isinstance(file_name, str):
@@ -184,14 +184,19 @@ class Model(ABC):
 
         x_train, x_val, y_train, y_val = self._split_train_test(df)
 
+        verbose = kwargs.pop("verbose", 1)
+        cv = kwargs.pop("cv", 3)
+        n_jobs = kwargs.pop("n_jobs", -1)
+
         grid_search = GridSearchCV(
             estimator=self._get_model(),
             param_grid=grid_params,
             scoring=scoring,
             cv=cv,
-            verbose=1,
-            n_jobs=-1,
-            return_train_score=True)
+            verbose=verbose,
+            n_jobs=n_jobs,
+            return_train_score=True,
+            **kwargs)
 
         grid_search.fit(x_train, y_train, eval_set=[(x_val, y_val)], verbose=True)
 
@@ -275,7 +280,8 @@ class Model(ABC):
         """
         if self.model is None:
             raise AttributeError(
-                f"Errore {self.__class__.__name__}Non è possibile eseguire 'predict' se il modello non è stato addestrato; "
+                f"Errore {self.__class__.__name__}Non è possibile eseguire 'predict' se il modello non è stato "
+                f"addestrato; "
                 f"eseguire prima {self.__class__.__name__}.train.")
         if not isinstance(dtf_pred, pd.DataFrame):
             raise TypeError(f"Errore {self.__class__.__name__}: 'x' deve essere un DataFrame Pandas.")
@@ -422,3 +428,4 @@ class XgBoost(Model):
 
         self.model = self._get_model(**self.model_params, **self.additional_params)
         return super().train(dtf_data)
+
