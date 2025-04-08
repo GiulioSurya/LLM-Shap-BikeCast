@@ -1,4 +1,3 @@
-
 # 🚲 XGB Bike Predictor
 
 A modular and scalable Python project for predicting bike rentals using an XGBoost regressor and a custom preprocessing pipeline.  
@@ -18,4 +17,20 @@ This repository provides:
 - Example training and prediction scripts in a reproducible pipeline.
 
 ---
+
+## 🐝 API
+
+To run the API, you need to install **uvicorn**.
+
+Launch the API from the terminal using:
+
+uvicorn API2:api --reload --port XXXX
+
+Replace XXXX with any available port number (e.g., 8000, 5000, etc.).
+
+⚠️ Important:
+Make sure to adjust import paths in the source code if they don’t match your local directory structure.
+The current paths reflect the setup on the original developer’s machine and may need to be modified for your environment.
+
+
 
