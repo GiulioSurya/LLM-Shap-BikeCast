@@ -1,71 +1,116 @@
+Ecco una versione aggiornata e migliorata del README per renderlo più chiaro e fruibile a chi consulta la repository, con una nota esplicita sullo stato di sviluppo delle API:
+
+---
+
 # 🚲 XGB Bike Predictor
 
-A modular and scalable Python project for predicting bike rentals using an XGBoost regressor and a custom preprocessing pipeline.  
-⚠️ **Note**: This project is not focused on business case analysis or model performance interpretation, but rather on **creating clean, production-ready, and extensible Python code** for preprocessing, training, and deployment.
+A modular and scalable Python project for predicting bike rentals using an XGBoost regressor and a custom preprocessing pipeline.
+
+> ⚠️ **Disclaimer**: This project is focused on **writing clean, modular, production-ready code**, rather than on business KPIs or model performance optimization.
+> Its main goal is to provide a structured, extensible pipeline for preprocessing, training, SHAP-based interpretation, and deployment.
 
 ---
 
 ## 📌 Overview
 
-This repository provides:
+This repository includes:
 
-- A fully object-oriented preprocessing pipeline.
-- Modular feature engineering components (e.g., wind binning, temporal encoding).
-- A custom `Model` class structure, with full XGBoost support.
-- Grid search for hyperparameter tuning and result export to Excel.
-- Serialization of both model and pipeline using `pickle`.
-- Example training and prediction scripts in a reproducible pipeline.
+* A fully object-oriented and reusable preprocessing pipeline.
+* Modular feature engineering components (e.g., binning, categorical encoding, custom time features).
+* An extensible `Model` class, including XGBoost-specific functionality.
+* Support for grid search with result export to Excel.
+* SHAP integration for model interpretability.
+* Serialization of both the model and preprocessing pipeline with `pickle`.
+* A generation module using LLMs to interpret model predictions.
+* FastAPI endpoints for external usage (⚠️ **still under development**).
 
 ---
-## 🧩 Project Modules Overview
 
-This repository is organized into modular components, each serving a specific purpose in the XGBoost-based bike demand prediction system:
+## 🧩 Module Breakdown
 
-### 📦 `preprocessing.py`
-Handles data preprocessing, including feature engineering, transformations, and preparation of the dataset for training and evaluation.
+### 🛠 `preprocessing.py`
 
-### ⚙️ `models.py`
-Defines the core model logic. It includes a base `Model` class and a specific implementation using `XGBoost`. Handles training, prediction, model saving/loading, and evaluation.
+Manages preprocessing logic with a chain of transformations (e.g., scaling, encoding, new variable creation). Every transformation is implemented as a separate class for flexibility.
 
-### 📐 `schemas.py`
-Contains Pydantic data schemas used to validate and structure input/output data when working with the API. Ensures consistent and reliable data exchange.
+### 🔄 `postprocessing.py`
+
+Performs postprocessing on prediction inputs before passing them to interpretation modules (e.g., SHAP explanation binning).
+
+### 📦 `modell.py`
+
+Contains the abstract `Model` class and a concrete `XgBoost` implementation. Handles training, grid search, prediction, SHAP computation, and model persistence.
+
+### 🧬 `schemas.py`
+
+Defines Pydantic schemas used to validate inputs and outputs for FastAPI. Ensures structured and validated data.
 
 ### 🌐 `API2.py`
-Implements a FastAPI-based RESTful API that exposes endpoints for:
-- Grid search of model hyperparameters
-- Model training
-- Making predictions on new data
 
-### 🚀 `usage.py`
-Provides example code for end-to-end execution: from preprocessing to model training and predictions. Useful for testing and demonstration purposes.
+Implements RESTful endpoints via FastAPI:
+
+* `/grid_search`: to tune model hyperparameters
+* `/training`: to train and persist the model
+* `/predict`: to make predictions on new data
+
+> ⚠️ **Note**: These endpoints are a work in progress. Minor refactoring or adjustments may still be needed.
+
+### 🧠 `llm.py`
+
+Uses an LLM (e.g., via Ollama) to generate natural language interpretations of predictions based on SHAP values and feature descriptions.
 
 ### ✅ `unittest_model.py`
-Includes unit tests to validate the functionality of the model and the preprocessing pipeline. Ensures robustness and helps catch regressions.
 
-### 📄 `requirements.txt`
-Lists all Python dependencies required to run the project. Use `pip install -r requirements.txt` to install them.
-
-### 📊 `hour.csv`
-Sample dataset used to test and demonstrate the model. Contains historical bike rental data with environmental and seasonal features.
+Provides unit tests for key components in the model and preprocessing logic. Helps ensure robustness, consistency, and easier debugging.
 
 ---
 
-This modular structure makes the project easy to maintain, extend, and deploy. Feel free to explore each module and adapt it to your own predictive modeling use case!
+## 🧪 Example Usage
 
+To run a complete pipeline from training to prediction:
 
-## 🐝 API
+1. Load your dataset (e.g., `hour.csv`)
+2. Apply preprocessing
+3. Train the XGBoost model
+4. Make predictions
+5. Use SHAP and LLM modules to explain the results
 
-To run the API, you need to install **uvicorn**.
+Scripts and examples can be adapted for batch predictions, experiments, or deployment scenarios.
 
-Launch the API from the terminal using:
+---
 
-uvicorn API2:api --reload --port XXXX
+## 🚀 Running the API
 
-Replace XXXX with any available port number (e.g., 8000, 5000, etc.).
+Install the required dependency:
 
-⚠️ Important:
-Make sure to adjust import paths in the source code if they don’t match your local directory structure.
-The current paths reflect the setup on the original developer’s machine and may need to be modified for your environment.
+```bash
+pip install uvicorn
+```
 
+Launch the FastAPI server:
+
+```bash
+uvicorn API2:api --reload --port 8000
+```
+
+Change the port if needed (e.g., 5000).
+Then visit: [http://localhost:8000/docs](http://localhost:8000/docs) for interactive documentation.
+
+> 🔧 **Note**: You may need to adjust import paths in the source code depending on your local file structure. Paths reflect the original developer’s environment.
+
+---
+
+## 📁 Files Included
+
+* `hour.csv`: Sample dataset for training and testing.
+* `requirements.txt`: List of dependencies.
+* `jsons/`: Folder expected to contain `examples.json` and `mapping.json` used for prompt generation and SHAP interpretation.
+
+---
+
+## 🧠 Final Notes
+
+This project is designed for **developers and data scientists** who want a clean foundation to build custom, explainable machine learning pipelines. Feel free to adapt modules to your needs, extend them, or plug in different models.
+
+For questions, improvements, or collaboration — feel free to open an issue or pull request. 🚴‍♂️
 
 
