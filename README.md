@@ -1,7 +1,3 @@
-Ecco una versione aggiornata e migliorata del README per renderlo più chiaro e fruibile a chi consulta la repository, con una nota esplicita sullo stato di sviluppo delle API:
-
----
-
 # 🚲 XGB Bike Predictor
 
 A modular and scalable Python project for predicting bike rentals using an XGBoost regressor and a custom preprocessing pipeline.
@@ -20,8 +16,8 @@ This repository includes:
 * An extensible `Model` class, including XGBoost-specific functionality.
 * Support for grid search with result export to Excel.
 * SHAP integration for model interpretability.
+* Natural language explanations of predictions via LLMs.
 * Serialization of both the model and preprocessing pipeline with `pickle`.
-* A generation module using LLMs to interpret model predictions.
 * FastAPI endpoints for external usage (⚠️ **still under development**).
 
 ---
@@ -56,7 +52,7 @@ Implements RESTful endpoints via FastAPI:
 
 ### 🧠 `llm.py`
 
-Uses an LLM (e.g., via Ollama) to generate natural language interpretations of predictions based on SHAP values and feature descriptions.
+Uses an LLM (via **[Ollama](https://ollama.com/)**) to generate natural language interpretations of predictions based on SHAP values and feature descriptions.
 
 ### ✅ `unittest_model.py`
 
@@ -64,17 +60,23 @@ Provides unit tests for key components in the model and preprocessing logic. Hel
 
 ---
 
-## 🧪 Example Usage
+## 🧠 LLM Setup (Ollama)
 
-To run a complete pipeline from training to prediction:
+To enable the LLM-based interpretation of predictions, the project requires **Ollama** with a specific model.
 
-1. Load your dataset (e.g., `hour.csv`)
-2. Apply preprocessing
-3. Train the XGBoost model
-4. Make predictions
-5. Use SHAP and LLM modules to explain the results
+### 1. Install Ollama
 
-Scripts and examples can be adapted for batch predictions, experiments, or deployment scenarios.
+Download and install from [https://ollama.com](https://ollama.com) — follow the instructions for your operating system.
+
+### 2. Pull the Required Model
+
+Once installed, run the following command to download the required model:
+
+```bash
+ollama pull llama3.1:8b
+```
+
+The model used in the pipeline defaults to `llama3`. If you modify the `model_name` parameter in `llm.py`, make sure to pull the corresponding model.
 
 ---
 
@@ -92,8 +94,7 @@ Launch the FastAPI server:
 uvicorn API2:api --reload --port 8000
 ```
 
-Change the port if needed (e.g., 5000).
-Then visit: [http://localhost:8000/docs](http://localhost:8000/docs) for interactive documentation.
+Then visit: [http://localhost:8000/docs](http://localhost:8000/docs) for interactive Swagger documentation.
 
 > 🔧 **Note**: You may need to adjust import paths in the source code depending on your local file structure. Paths reflect the original developer’s environment.
 
@@ -103,14 +104,17 @@ Then visit: [http://localhost:8000/docs](http://localhost:8000/docs) for interac
 
 * `hour.csv`: Sample dataset for training and testing.
 * `requirements.txt`: List of dependencies.
-* `jsons/`: Folder expected to contain `examples.json` and `mapping.json` used for prompt generation and SHAP interpretation.
+* `jsons/`: Folder expected to contain:
+
+  * `examples.json`: Few-shot examples for prompt generation
+  * `mapping.json`: Descriptions and categorical mappings for each variable
 
 ---
 
-## 🧠 Final Notes
+## 💡 Final Notes
 
-This project is designed for **developers and data scientists** who want a clean foundation to build custom, explainable machine learning pipelines. Feel free to adapt modules to your needs, extend them, or plug in different models.
+This project is designed for **developers and data scientists** looking for a robust and modular ML pipeline with integrated model explainability.
 
-For questions, improvements, or collaboration — feel free to open an issue or pull request. 🚴‍♂️
+Feel free to fork, extend, or customize according to your needs — and ⭐ the repo if you find it useful!
 
 
